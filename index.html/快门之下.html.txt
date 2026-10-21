@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《快门之下》——一名新媒体记者的伦理抉择</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+        /* 全局允许流畅纵向滚动 */
+        html, body {
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-color: #0b0d12;
+            color: #e2e8f0;
+            font-family: 'Noto Sans SC', sans-serif;
+            user-select: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .serif-font {
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        /* 扫描线效果 */
+        .scanline {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.25) 50%,
+                rgba(0, 0, 0, 0.25)
+            );
+            background-size: 100% 4px;
+        }
+
+        /* 现代 AVG 对话框卡片 */
+        .vn-box {
+            background: rgba(13, 16, 23, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 25px rgba(59, 130, 246, 0.12);
+        }
+
+        .vn-button {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(22, 27, 38, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .vn-button:hover, .vn-button:active {
+            background: rgba(37, 99, 235, 0.3);
+            border-color: rgba(96, 165, 250, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        /* 自定义美化滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .typewriter-cursor::after {
+            content: '▌';
+            animation: blink 0.8s infinite;
+            color: #60a5fa;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full flex flex-col justify-between relative selection:bg-blue-600 selection:text-white">
+
+    <!-- Web Audio 音效系统 -->
+    <script>
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playTypewriter() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(750 + Math.random() * 200, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.03);
+            }
+
+            playChime(isGood = true) {
+                if (this.muted) return;
+                this.init();
+                const freqs = isGood ? [523.25, 659.25, 783.99, 1046.50] : [300, 260, 220, 180];
+                freqs.forEach((f, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = isGood ? 'sine' : 'sawtooth';
+                    osc.frequency.setValueAtTime(f, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.4);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.08);
+                    osc.stop(this.ctx.currentTime + idx * 0.08 + 0.4);
+                });
+            }
+        }
+        const sfx = new SoundFX();
+    </script>
+
+    <!-- 背景图片层 (全屏固定) -->
+    <div id="bg-container" class="fixed inset-0 bg-cover bg-center transition-all duration-1000 transform filter brightness-75 contrast-110 pointer-events-none z-0" style="background-image: url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1920&auto=format&fit=crop');">
+    </div>
+    <div class="fixed inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-slate-950/80 pointer-events-none z-0"></div>
+    <div class="fixed inset-0 scanline opacity-30 pointer-events-none z-0"></div>
+
+    <!-- 顶部导航栏 (固定置顶) -->
+    <header class="sticky top-0 z-30 flex justify-between items-center px-4 md:px-8 py-3 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 shadow-md">
+        <div class="flex items-center space-x-3">
+            <span class="bg-blue-600/20 text-blue-400 border border-blue-500/40 text-xs px-2.5 py-1 rounded font-mono font-semibold tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-camera-retro"></i> 快门之下
+            </span>
+            <span id="node-tag" class="text-xs text-slate-400 hidden sm:inline-block border-l border-slate-800 pl-3">
+                节点: <span class="text-slate-200 font-mono">start</span>
+            </span>
+        </div>
+
+        <!-- 功能按钮 -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+            <button id="undo-btn" onclick="undoChoice()" disabled class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 border border-slate-700">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span class="hidden sm:inline">撤销上一步</span>
+            </button>
+
+            <button onclick="toggleGalleryModal()" class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1.5 border border-slate-700">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span>图鉴 (<span id="unlocked-count">0</span>/16)</span>
+            </button>
+
+            <button onclick="restartGame()" class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 border border-slate-700">
+                <i class="fa-solid fa-arrows-rotate"></i>
+                <span class="hidden sm:inline">重来</span>
+            </button>
+
+            <button id="sound-btn" onclick="toggleMute()" class="text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 核心游戏内容区域 (允许纵向无限延伸滚动) -->
+    <main class="relative z-10 flex-1 flex flex-col justify-end p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full my-auto py-6 pb-20">
+
+        <!-- 困境标识与知识卡入口 -->
+        <div id="dilemma-banner" class="mb-3 flex flex-wrap items-center justify-between gap-2 transition-all duration-300">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/80 border border-red-500/50 text-red-300 text-xs font-medium shadow-lg">
+                <i class="fa-solid fa-scale-balanced text-red-400"></i>
+                <span>伦理抉择：<strong id="dilemma-text" class="text-white">隐私 VS 时效</strong></span>
+            </div>
+
+            <button id="card-btn" onclick="openKnowledgeModal()" class="hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-medium hover:bg-amber-500/30 transition animate-pulse shadow-lg">
+                <i class="fa-solid fa-lightbulb"></i>
+                <span>查看传播伦理小卡</span>
+            </button>
+        </div>
+
+        <!-- AVG 场景卡片 -->
+        <div class="vn-box rounded-2xl p-5 sm:p-7 transition-all duration-300 flex flex-col gap-4 relative overflow-hidden">
+            <!-- 顶部渐变装饰线条 -->
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+
+            <!-- 发言人及场景 -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping"></span>
+                    <h2 id="speaker-label" class="serif-font font-bold text-base sm:text-lg text-blue-400 tracking-wide">
+                        星闻局编辑部
+                    </h2>
+                </div>
+                <span id="scene-location" class="text-xs text-slate-400 flex items-center gap-1">
+                    <i class="fa-solid fa-location-dot"></i> 周五傍晚 · 编辑部
+                </span>
+            </div>
+
+            <!-- 剧情正文区域 -->
+            <div id="narrative-text" class="text-sm sm:text-base leading-relaxed text-slate-100 min-h-[90px] font-normal tracking-wide space-y-3">
+                <!-- 动态注入剧情文字 -->
+            </div>
+
+            <!-- 抉择选项区 (保证足够的底部 Padding 防止挡住) -->
+            <div id="choices-container" class="grid grid-cols-1 gap-3 mt-3 pt-3 border-t border-slate-800/80 pb-2">
+                <!-- 动态注入选项按钮 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚版权 -->
+    <footer class="relative z-10 text-center py-3 text-xs text-slate-500 bg-slate-950/90 border-t border-slate-900 mt-auto">
+        《快门之下》丨传播伦理抉择游戏 · 沉浸式新闻职业操守体验
+    </footer>
+
+    <!-- 弹窗 1: 传播伦理知识卡 Modal -->
+    <div id="knowledge-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative transform scale-95 transition-transform duration-300" id="knowledge-modal-card">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2 text-amber-400 font-bold text-lg">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                    <span>传播伦理知识小卡</span>
+                </div>
+                <button onclick="closeKnowledgeModal()" class="text-slate-400 hover:text-white text-lg px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="py-4 text-slate-200 text-sm leading-relaxed space-y-3" id="knowledge-card-body">
+                <!-- 动态更新知识卡内容 -->
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex justify-end">
+                <button onclick="closeKnowledgeModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition">
+                    我已理解，继续游戏
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗 2: 结局结算 Modal -->
+    <div id="ending-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-500 overflow-y-auto">
+        <div class="bg-slate-900/95 border border-slate-700 rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative text-center flex flex-col items-center my-auto">
+            
+            <div id="ending-badge" class="mb-3 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase border">
+                好结局
+            </div>
+
+            <div id="ending-icon" class="text-5xl my-2">
+                🕊️
+            </div>
+
+            <h1 id="ending-title" class="serif-font font-black text-2xl sm:text-3xl text-white mb-2">
+                【清白的良心】
+            </h1>
+
+            <p id="ending-desc" class="text-sm sm:text-base text-slate-300 leading-relaxed my-3 max-w-md">
+                你多次在重大诱惑面前守住伦理底线。虽然没有变成流量顶流记者，但行业很多同行尊重你的坚持；不少学生拿你的报道当作「新闻伦理范例」。
+            </p>
+
+            <div class="w-full bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 my-3 text-xs sm:text-sm text-amber-300/90 italic">
+                “<span id="ending-quote">新闻可以不轰动，但不能没有良心。</span>”
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3 mt-4 w-full">
+                <button onclick="closeEndingModal(); restartGame();" class="flex-1 min-w-[140px] px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-600/30">
+                    <i class="fa-solid fa-rotate-left mr-1.5"></i> 再试一次
+                </button>
+                <button onclick="closeEndingModal(); toggleGalleryModal();" class="flex-1 min-w-[140px] px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-sm transition border border-slate-700">
+                    <i class="fa-solid fa-trophy mr-1.5"></i> 查看全部结局
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗 3: 全结局图鉴 Modal -->
+    <div id="gallery-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl my-auto">
+            <div class="flex items-center justify-between p-5 border-b border-slate-800">
+                <div>
+                    <h3 class="serif-font font-bold text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> 结局收集图鉴
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">解锁全部16种职业抉择分支结局</p>
+                </div>
+                <button onclick="toggleGalleryModal()" class="text-slate-400 hover:text-white text-lg px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3" id="gallery-grid">
+                <!-- 16 种结局动态渲染 -->
+            </div>
+
+            <div class="p-4 border-t border-slate-800 bg-slate-950/50 flex justify-between items-center text-xs text-slate-400">
+                <span>解锁进度：<strong id="gallery-progress-text" class="text-blue-400">0</strong> / 16</span>
+                <button onclick="toggleGalleryModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏引擎核心逻辑 -->
+    <script>
+        // 16种全部结局数据库
+        const ENDINGS = {
+            "清白的良心": {
+                type: "good",
+                icon: "🕊️",
+                title: "【清白的良心】",
+                desc: "你多次在重大诱惑面前守住伦理底线。虽然没有变成流量顶流记者，但行业很多同行尊重你的坚持；不少学生拿你的报道当作「新闻伦理范例」。",
+                quote: "新闻可以不轰动，但不能没有良心。"
+            },
+            "内容为王": {
+                type: "good",
+                icon: "📰",
+                title: "【内容为王】",
+                desc: "你放弃短期流量陷阱，长期坚持做严谨的深度、科普报道。慢慢积累一批信任你的读者；几年之后你的深度特稿获得省级新闻奖。",
+                quote: "流量会过期，但有温度的真实报道会长久留存。"
+            },
+            "吹哨人": {
+                type: "good",
+                icon: "📢",
+                title: "【吹哨人】",
+                desc: "你顶住压力提交证据，病历泄露黑产被有关部门立案查处；多名相关人员被问责。你没有站到聚光灯前，但业内都知道是一份匿名材料推动改变。",
+                quote: "吹哨也许孤独，但可以带来制度层面微小而珍贵的进步。"
+            },
+            "觉醒时刻": {
+                type: "good",
+                icon: "⭐",
+                title: "【觉醒时刻】",
+                desc: "你曾经踩过伦理的灰色地带，但及时停下来公开道歉、做补救；很多读者看见你的反思，反而更加理解传播伦理的意义。",
+                quote: "做错不可怕，真正可贵的是拥有及时回头的勇气。"
+            },
+            "无名英雄": {
+                type: "good",
+                icon: "⚖️",
+                title: "【无名英雄】",
+                desc: "你没有拿到独家头条，但你的线索协助有关部门破获了侵犯个人信息案件；你不求署名，只是坚信媒体除了追逐新闻还有社会责任。",
+                quote: "不是所有英雄都出现在头条。"
+            },
+            "重生": {
+                type: "good",
+                icon: "🏡",
+                title: "【重生】",
+                desc: "你看透大城市流量行业的内卷，回到一座小城跑民生新闻；每天报道社区、普通人故事，虽然收入不高，但每天都觉得自己的工作很有价值。",
+                quote: "价值从来不由阅读量定义。"
+            },
+            "沉默的代价": {
+                type: "neutral",
+                icon: "😌",
+                title: "【沉默的代价】",
+                desc: "你知道什么是正确选择，但是来自上级、生存的压力让你最后选择妥协；风波过去工作保住了，但每次想起这件事内心总有愧疚。",
+                quote: "有些妥协换来了安稳，却留下长久的良心不安。"
+            },
+            "退隐者": {
+                type: "neutral",
+                icon: "📚",
+                title: "【退隐者】",
+                desc: "你没有向错误低头，但也无力改变整个编辑部；于是选择离开这家流量媒体，去高校做新闻伦理助教、自由撰稿人。",
+                quote: "理想没有熄灭，只是换了另一个阵地。"
+            },
+            "精明的代价": {
+                type: "neutral",
+                icon: "💰",
+                title: "【精明的代价】",
+                desc: "每一次你都做出对自己收益最优的选择；短期奖金拿到很多，但是因为几次伦理争议，业内口碑受损；重大深度报道机会再也没有落到你身上。",
+                quote: "算计得到短期利益，也会慢慢耗掉别人对你的信任。"
+            },
+            "救赎之路": {
+                type: "neutral",
+                icon: "🌅",
+                title: "【救赎之路】",
+                desc: "你曾经犯了伦理错误，但你没有逃避；公开道歉并且长期投入心理健康科普活动；很多被伤害过的人慢慢谅解了你。",
+                quote: "道歉不是结束，是漫长救赎之路的起点。"
+            },
+            "迷失的流量": {
+                type: "bad",
+                icon: "📉",
+                title: "【迷失的流量】",
+                desc: "你赢下无数次KPI，账号粉丝几百万；可回头一看，自己已经习惯性用猎奇、猜测制造爆款；你已经分不清「什么是新闻、什么只是流量商品」。",
+                quote: "你得到流量，却慢慢弄丢当初做记者的初心。"
+            },
+            "流量的囚徒": {
+                type: "bad",
+                icon: "🚨",
+                title: "【流量的囚徒】",
+                desc: "持续不断的擦边、消费他人隐私的报道，引来监管部门处罚；账号被限制，你的名字成为课堂上「新闻伦理反面案例」。",
+                quote: "拿规则与别人痛苦换来的流量，终有一天会反噬自己。"
+            },
+            "背锅侠": {
+                type: "bad",
+                icon: "🎭",
+                title: "【背锅侠】",
+                desc: "出事的时候，单位让你一个人承担全部责任；你被迫离职，名声受损；而真正做决定的人没有受到处罚。",
+                quote: "没有守住伦理底线的时候，很容易沦为权力之下的牺牲品。"
+            },
+            "行尸走肉": {
+                type: "bad",
+                icon: "🧟",
+                title: "【行尸走肉】",
+                desc: "经历几次风波之后，你不再关心真相和良心；每天只是机械完成稿件任务，既不追求卓越也不在乎对错，工作变成纯粹混日子。",
+                quote: "当一个人放弃内心标尺之后，职业生命已经提前结束。"
+            },
+            "高墙之内": {
+                type: "bad",
+                icon: "🔒",
+                title: "【高墙之内】",
+                desc: "因为参与购买、传播公民病历等敏感个人信息，情节严重触犯法律；被追究刑事责任。",
+                quote: "新闻调查权有清晰法律边界，越过红线就要承担沉重代价。"
+            },
+            "共犯": {
+                type: "bad",
+                icon: "🔥",
+                title: "【共犯】",
+                desc: "明明已经知道非法病历贩卖链条存在，但出于利益害怕惹麻烦而帮忙遮掩；案件被破之后你作为知情隐瞒者被追责，职业生涯彻底画上句号。",
+                quote: "对恶的沉默，有时等同于成为它的一部分。"
+            }
+        };
+
+        // 剧情节点全数据库
+        const NODES = {
+            "start": {
+                title: "明星就医照片",
+                dilemma: "隐私 VS 时效",
+                speaker: "主编 @工作群",
+                location: "周五傍晚 · 编辑部",
+                bg: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1920&auto=format&fit=crop",
+                text: "周五傍晚，你的手机突然收到网友发来一张高清照片：知名女艺人「林知夏」戴着口罩，被人搀扶走出市三甲医院急诊大门。<br><br>主编在群里@全体：「马上出稿！全网还没有人发！15分钟推头条！阅读破100万有大额奖金！」<br><br>但你注意到：照片拍到了她半张脸、医院手环；你隐约听说她最近精神状态很差，而她团队从来没有公开过任何身体、心理情况。",
+                choices: [
+                    { text: "A. 立刻简单修图，打薄手环，直接推送", next: "clickbait" },
+                    { text: "B. 先停手，试着联系她工作室简单求证，晚半小时发", next: "verify" },
+                    { text: "C. 拒绝发这条，跟主编说明：就医属于私人健康场景，未经许可发布有隐私风险", next: "missed" }
+                ]
+            },
+            "verify": {
+                title: "核实后发布压力",
+                dilemma: "真实 VS 流量",
+                speaker: "工作室人员 & 主编",
+                location: "电话求证 · 编辑部",
+                bg: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1920&auto=format&fit=crop",
+                text: "你打了电话，工作室没有正式回应，但一位工作人员私下简短回复：「她确实身体不适，恳请不要放大、不要猜测病因。」<br><br>主编很不满意：「别的号已经有模糊图跑出来了！我们就算要发，也必须抢在最前面！而且别只放照片，可以暗示一下『传闻有抑郁问题』，流量会翻几倍！」",
+                choices: [
+                    { text: "A. 发稿，但严格自我约束：只用公开可看见的画面、文字只写「近日现身医院，身体状况未得到本人确认」，不做任何猜测", next: "balanced" },
+                    { text: "B. 听主编建议：加上「网传情绪状态堪忧」这类暗示性语句冲流量", next: "follow" },
+                    { text: "C. 跟主编摊牌：即使流量损失，也不适合消费别人健康，放弃这条报道", next: "missed" }
+                ]
+            },
+            "clickbait": {
+                title: "标题党后果",
+                dilemma: "法律 VS 利益",
+                speaker: "紧急会议",
+                location: "会议室 · 危机爆发",
+                bg: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop",
+                text: "你的推送火了！上线40分钟阅读冲到126万，奖金已经登记；可仅仅两小时，艺人工作室发严正声明：指责你们未经许可泄露个人健康隐私、标题「惊爆！知名女星突然入院！」带有煽动与恶意揣测，已经寄出律师函，大量网友也留言批评你们吃人血馒头。<br><br>部门开会：主编说「现在撤稿等于承认我们错了！不如干脆再加一条后续：『网友热议她的心理状态』，把热度再推一波！」",
+                choices: [
+                    { text: "A. 听从主编，追加后续报道继续吃热度", next: "speculation" },
+                    { text: "B. 坚持自我：马上撤稿、发布公开更正道歉，放弃全部流量收益", next: "expose" },
+                    { text: "C. 两边妥协：不撤稿也不加新内容，冷处理，希望风波自己过去", next: "follow" }
+                ]
+            },
+            "follow": {
+                title: "跟风报道",
+                dilemma: "独家 VS 隐私",
+                speaker: "同行私信",
+                location: "深夜 · 电脑屏幕前",
+                bg: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1920&auto=format&fit=crop",
+                text: "全网已经掀起巨大讨论，很多自媒体开始扒她过往动态，拼凑所谓「证据」，有人晒出疑似她的就诊记录截图。<br><br>有同行悄悄私聊你：有渠道可以买到她这一次完整门诊病历，价格不高，一旦拿到就是真正的大独家。",
+                knowledgeCard: "✨ <strong>传播伦理知识卡：</strong><br>公众人物人格权依然受保护；病历属于高度敏感个人信息，买卖、泄露涉嫌触犯法律。",
+                choices: [
+                    { text: "A. 拒绝购买病历，但转发一些其他账号放出的「网友整理爆料」，跟上热度", next: "missed" },
+                    { text: "B. 心动，决定花钱买下病历，准备做大独家", next: "balanced", flag: "bought_medical_record" },
+                    { text: "C. 坚决不参与，并且在内部群提醒同事：买卖病历是违法", next: "whistleblow" }
+                ]
+            },
+            "balanced": {
+                title: "发现病历贩卖",
+                dilemma: "诱惑 VS 底线",
+                speaker: "旁白",
+                location: "暗网/黑产调查",
+                bg: "https://images.unsplash.com/photo-1510511459019-5dda7724fd87?q=80&w=1920&auto=format&fit=crop",
+                text: "你联系之后大吃一惊：这条黑色产业链不只有她一个人的病历，很多明星、普通人就医信息都被医院内部人员偷偷流出。<br><br>摆在你面前三条路：<br>• 如果拿病历发独家：流量爆炸，你会一跃成为头部记者；<br>• 如果不发、只是匿名举报：报道出不来，但黑链有可能被打击；<br>• 如果自己写深度调查：需要投入大量时间，甚至会遭到报复，短期没有流量。",
+                knowledgeCard: "✨ <strong>传播伦理知识卡：</strong><br>最小伤害原则；新闻采访权不等于可以购买非法获取的个人信息。",
+                choices: [
+                    { text: "A. 拿到病历，进行「打码处理」之后刊发独家报道", next: "speculation", flag: "published_illegal_record" },
+                    { text: "B. 放弃爆料，收集证据，向卫健委、网信部门匿名举报这条黑色链条", next: "whistleblow", flag: "reported_black_market" },
+                    { text: "C. 觉得风险太大，假装自己什么都不知道，不去碰这件事", next: "awareness", flag: "covered_up_black_market" }
+                ]
+            },
+            "missed": {
+                title: "KPI压力",
+                dilemma: "生存 VS 原则",
+                speaker: "主编约谈",
+                location: "月底 · 主编办公室",
+                bg: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1920&auto=format&fit=crop",
+                text: "这一次你没有跟上热点。月底部门KPI排名，你的阅读数据掉到倒数。主编找你谈话：「新闻行业很残酷，不是光讲情怀就可以。别的记者都能抓热点，为什么你总是『太保守』？再这样下去，年底你的合同很难续。」<br><br>同时有一个新任务来了：有公益机构希望你们做抑郁症科普推送，但是没有流量分成；另一个任务是一条有广告费、但是夸大功效的心理产品软文。",
+                knowledgeCard: "✨ <strong>传播伦理知识卡：</strong><br>新闻人持续会遇到「职业生存压力」与「新闻伦理」之间的利益冲突。",
+                choices: [
+                    { text: "A. 选公益抑郁症科普，宁可KPI低一点", next: "awareness" },
+                    { text: "B. 接那篇高报酬软文，先保住自己工作位置", next: "speculation" },
+                    { text: "C. 消极应付：两个都草草做完交差，不求出彩只求过关", next: "expose" }
+                ]
+            },
+            "speculation": {
+                title: "虚构专家",
+                dilemma: "造假 VS 狡辩",
+                speaker: "同事提议",
+                location: "稿件撰写中",
+                bg: "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1920&auto=format&fit=crop",
+                text: "为了让报道/软文显得可信，同事提议：「找不到合适专家没关系，可以化名造一个『心理行业资深顾问』出来，点评林知夏的情况，读者看不出破绽。」<br><br>你心里很清楚：这等于制造信源、是新闻造假。主编在一旁催促：「很多媒体都这么干，大家只是为了把故事讲完整而已。」",
+                knowledgeCard: "✨ <strong>传播伦理知识卡：</strong><br>新闻真实性原则：信源必须真实可追溯；绝对不能虚构采访对象。",
+                choices: [
+                    { text: "A. 同意使用虚构专家完成稿件", next: "expose", flag: "fabricated_expert" },
+                    { text: "B. 坚决拒绝虚构信源；可以寻找真实、愿意发声的心理科普博主", next: "awareness" },
+                    { text: "C. 拒绝虚构专家，但默许文章里面出现没有来源的传闻句子", next: "follow" }
+                ]
+            },
+            "whistleblow": {
+                title: "举报后施压",
+                dilemma: "坚持 VS 妥协",
+                speaker: "主编与警告电话",
+                location: "高压对话",
+                bg: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1920&auto=format&fit=crop",
+                text: "你递交了完整证据举报病历贩卖。没想到消息意外走漏；有中间人打电话来警告你；主编也非常恼火：「你没有经过单位同意就出去举报，给整个编辑部惹来了麻烦！现在有两个选择：一是收回部分指控、大事化小；二是单位不会出面保护你。」",
+                choices: [
+                    { text: "A. 绝不收回证据，哪怕孤军奋战也要坚持推动调查", ending: "吹哨人" },
+                    { text: "B. 迫于巨大压力，选择撤回一部分材料，不再跟进", ending: "沉默的代价" },
+                    { text: "C. 不愿意妥协，但身心俱疲，递交辞职信离开这家新媒体", ending: "退隐者" }
+                ]
+            },
+            "awareness": {
+                title: "公益 vs 流量",
+                dilemma: "理想 VS 现实",
+                speaker: "两周后 · 读者留言",
+                location: "深夜后台",
+                bg: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1920&auto=format&fit=crop",
+                text: "你放弃了八卦热点，花两周时间完成一组「抑郁症、精神健康的公众科普」。这组文章数据远远不如明星八卦，但收到大量普通人留言：有人说文章改变了自己对心理疾病的看法；还有高校老师转发当作课堂材料。<br><br>可主编仍然觉得这一类报道「赚不到钱」，给你两个方向：一是以后多做这种深度内容，但奖金很少；二是回归娱乐热点赛道，可以拿到更高收入。",
+                choices: [
+                    { text: "A. 坚持深耕公共健康深度报道", ending: "内容为王" },
+                    { text: "B. 短暂坚持之后，为收入考虑转回追逐热点赛道", ending: "迷失的流量" },
+                    { text: "C. 不想在流量机器里面消耗自己，决定回到家乡小城从事本地民生报道", ending: "重生" }
+                ]
+            },
+            "expose": {
+                title: "抑郁曝光后果",
+                dilemma: "补救 VS 继续",
+                speaker: "舆论海啸",
+                location: "编辑部崩溃现场",
+                bg: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1920&auto=format&fit=crop",
+                text: "由于之前报道没有把握好边界、甚至使用了猜测和虚构信源，巨大舆论压力下艺人林知夏出现了更严重的情绪崩溃；大量网友开始反思媒体对于公众人物心理健康的消费；有不少人把矛头对准你们编辑部。<br><br>现在最重要的抉择来了：要不要承认错误、公开更正道歉？",
+                knowledgeCard: "✨ <strong>传播伦理知识卡：</strong><br>更正与道歉机制；报道心理疾病需要遵守「最小伤害」原则，避免二次伤害。",
+                dynamicChoices: true
+            }
+        };
+
+        // 状态变量
+        let currentNodeId = "start";
+        let userFlags = new Set();
+        let historyStack = []; // 支持撤销上一步
+        let unlockedEndings = new Set(JSON.parse(localStorage.getItem("shutter_endings_v2") || "[]"));
+        let currentTypewriterTimer = null;
+
+        // 页面初始化加载
+        window.addEventListener("DOMContentLoaded", () => {
+            updateUnlockedCount();
+            renderNode("start", false);
+        });
+
+        // 渲染剧情节点核心引擎
+        function renderNode(nodeId, pushHistory = true) {
+            const node = NODES[nodeId];
+            if (!node) return;
+
+            if (pushHistory && currentNodeId !== nodeId) {
+                historyStack.push({
+                    nodeId: currentNodeId,
+                    flags: new Set(userFlags)
+                });
+            }
+
+            currentNodeId = nodeId;
+            updateUndoButton();
+
+            // 切换背景图片
+            const bgEl = document.getElementById("bg-container");
+            bgEl.style.backgroundImage = `url('${node.bg}')`;
+
+            // 更新头部与困境标签
+            document.getElementById("node-tag").innerHTML = `节点: <span class="text-slate-200 font-mono">${nodeId}</span>`;
+            document.getElementById("dilemma-text").innerText = node.dilemma || "抉择";
+            document.getElementById("speaker-label").innerText = node.speaker || "旁白";
+            document.getElementById("scene-location").innerHTML = `<i class="fa-solid fa-location-dot"></i> ${node.location || '场景'}`;
+
+            // 控制知识卡入口按钮
+            const cardBtn = document.getElementById("card-btn");
+            if (node.knowledgeCard) {
+                cardBtn.classList.remove("hidden");
+            } else {
+                cardBtn.classList.add("hidden");
+            }
+
+            // 逐字打字机渲染
+            const textEl = document.getElementById("narrative-text");
+            textEl.innerHTML = "";
+            textEl.classList.add("typewriter-cursor");
+
+            if (currentTypewriterTimer) clearInterval(currentTypewriterTimer);
+
+            let charIndex = 0;
+            const fullText = node.text;
+
+            sfx.playClick();
+
+            currentTypewriterTimer = setInterval(() => {
+                if (charIndex < fullText.length) {
+                    if (fullText[charIndex] === '<') {
+                        const closeTagIndex = fullText.indexOf('>', charIndex);
+                        if (closeTagIndex !== -1) {
+                            charIndex = closeTagIndex + 1;
+                        }
+                    } else {
+                        charIndex++;
+                    }
+                    textEl.innerHTML = fullText.substring(0, charIndex);
+                    if (charIndex % 3 === 0) sfx.playTypewriter();
+                } else {
+                    clearInterval(currentTypewriterTimer);
+                    textEl.classList.remove("typewriter-cursor");
+                }
+            }, 18);
+
+            // 动态生成选项按钮
+            const choicesContainer = document.getElementById("choices-container");
+            choicesContainer.innerHTML = "";
+
+            let choicesList = node.choices || [];
+
+            // 对 'expose' 节点根据前面积累的标志位追加条件分支结局
+            if (node.dynamicChoices) {
+                choicesList = [
+                    { text: "A. 正视全部问题，发布诚恳长文道歉，同时发起「媒体如何报道心理疾病」的行业讨论", ending: "救赎之路" },
+                    { text: "B. 拒绝认错，把全部问题推给「网友传闻」「信息来源复杂」，继续收割剩余热度", ending: "流量的囚徒" },
+                    { text: "C. 听从安排把全部责任扛下来、成为这次事件背锅人之后离职", ending: "背锅侠" },
+                    { text: "D. 明知有错但选择沉默，不再发声、之后在岗位上浑浑噩噩混日子", ending: "行尸走肉" }
+                ];
+
+                if (userFlags.has("bought_medical_record") || userFlags.has("published_illegal_record")) {
+                    choicesList.push({
+                        text: "E. 曾参与购买/传播非法病历并且拒绝认错（触犯法律）",
+                        ending: "高墙之内"
+                    });
+                }
+
+                if (userFlags.has("covered_up_black_market")) {
+                    choicesList.push({
+                        text: "F. 明知病历黑色链条存在却选择帮忙掩盖",
+                        ending: "共犯"
+                    });
+                }
+            }
+
+            choicesList.forEach((choice) => {
+                const btn = document.createElement("button");
+                btn.className = "vn-button w-full text-left p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm text-slate-200 flex items-center justify-between group shadow-sm";
+                btn.innerHTML = `
+                    <span class="pr-2 leading-relaxed">${choice.text}</span>
+                    <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all text-xs flex-shrink-0"></i>
+                `;
+
+                btn.onclick = () => {
+                    sfx.playClick();
+                    if (choice.flag) {
+                        userFlags.add(choice.flag);
+                    }
+
+                    if (choice.ending) {
+                        triggerEnding(choice.ending);
+                    } else if (choice.next) {
+                        renderNode(choice.next);
+                    }
+                };
+
+                choicesContainer.appendChild(btn);
+            });
+        }
+
+        // 撤销/退回上一节点
+        function undoChoice() {
+            if (historyStack.length === 0) return;
+            sfx.playClick();
+            const lastState = historyStack.pop();
+            userFlags = lastState.flags;
+            renderNode(lastState.nodeId, false);
+        }
+
+        function updateUndoButton() {
+            const undoBtn = document.getElementById("undo-btn");
+            if (historyStack.length > 0) {
+                undoBtn.removeAttribute("disabled");
+            } else {
+                undoBtn.setAttribute("disabled", "true");
+            }
+        }
+
+        // 触发结局
+        function triggerEnding(endingKey) {
+            const ending = ENDINGS[endingKey];
+            if (!ending) return;
+
+            unlockedEndings.add(endingKey);
+            localStorage.setItem("shutter_endings_v2", JSON.stringify(Array.from(unlockedEndings)));
+            updateUnlockedCount();
+
+            sfx.playChime(ending.type === "good");
+
+            const badgeEl = document.getElementById("ending-badge");
+            if (ending.type === "good") {
+                badgeEl.className = "mb-3 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase border bg-emerald-500/20 text-emerald-400 border-emerald-500/40";
+                badgeEl.innerText = "好结局";
+            } else if (ending.type === "neutral") {
+                badgeEl.className = "mb-3 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase border bg-amber-500/20 text-amber-400 border-amber-500/40";
+                badgeEl.innerText = "中性结局";
+            } else {
+                badgeEl.className = "mb-3 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase border bg-red-500/20 text-red-400 border-red-500/40";
+                badgeEl.innerText = "坏结局";
+            }
+
+            document.getElementById("ending-icon").innerText = ending.icon;
+            document.getElementById("ending-title").innerText = ending.title;
+            document.getElementById("ending-desc").innerText = ending.desc;
+            document.getElementById("ending-quote").innerText = ending.quote;
+
+            const modal = document.getElementById("ending-modal");
+            modal.classList.remove("hidden");
+            setTimeout(() => modal.classList.remove("opacity-0"), 10);
+        }
+
+        function closeEndingModal() {
+            const modal = document.getElementById("ending-modal");
+            modal.classList.add("opacity-0");
+            setTimeout(() => modal.classList.add("hidden"), 300);
+        }
+
+        function restartGame() {
+            userFlags.clear();
+            historyStack = [];
+            renderNode("start", false);
+        }
+
+        function openKnowledgeModal() {
+            const node = NODES[currentNodeId];
+            if (!node || !node.knowledgeCard) return;
+
+            sfx.playClick();
+            document.getElementById("knowledge-card-body").innerHTML = node.knowledgeCard;
+
+            const modal = document.getElementById("knowledge-modal");
+            modal.classList.remove("hidden");
+            setTimeout(() => modal.classList.remove("opacity-0"), 10);
+        }
+
+        function closeKnowledgeModal() {
+            const modal = document.getElementById("knowledge-modal");
+            modal.classList.add("opacity-0");
+            setTimeout(() => modal.classList.add("hidden"), 300);
+        }
+
+        function toggleGalleryModal() {
+            sfx.playClick();
+            const modal = document.getElementById("gallery-modal");
+
+            if (modal.classList.contains("hidden")) {
+                renderGalleryGrid();
+                modal.classList.remove("hidden");
+                setTimeout(() => modal.classList.remove("opacity-0"), 10);
+            } else {
+                modal.classList.add("opacity-0");
+                setTimeout(() => modal.classList.add("hidden"), 300);
+            }
+        }
+
+        function renderGalleryGrid() {
+            const grid = document.getElementById("gallery-grid");
+            grid.innerHTML = "";
+
+            Object.keys(ENDINGS).forEach((key) => {
+                const ending = ENDINGS[key];
+                const isUnlocked = unlockedEndings.has(key);
+
+                const card = document.createElement("div");
+                card.className = `p-3.5 rounded-xl border transition flex flex-col justify-between ${
+                    isUnlocked
+                        ? "bg-slate-800/80 border-slate-700/80 text-slate-200"
+                        : "bg-slate-950/60 border-slate-800/60 text-slate-600 opacity-60"
+                }`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xl">${isUnlocked ? ending.icon : '🔒'}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${
+                                isUnlocked 
+                                    ? (ending.type === 'good' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : ending.type === 'neutral' ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-red-950 text-red-400 border border-red-800')
+                                    : 'bg-slate-900 text-slate-600'
+                            }">
+                                ${isUnlocked ? (ending.type === 'good' ? '好结局' : ending.type === 'neutral' ? '中性结局' : '坏结局') : '未解锁'}
+                            </span>
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-200 ${!isUnlocked && 'blur-[2px]'}">${ending.title}</h4>
+                        <p class="text-xs mt-1 text-slate-400 leading-snug line-clamp-3">${isUnlocked ? ending.desc : '探索分支解锁此结局。'}</p>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            document.getElementById("gallery-progress-text").innerText = unlockedEndings.size;
+        }
+
+        function updateUnlockedCount() {
+            document.getElementById("unlocked-count").innerText = unlockedEndings.size;
+        }
+
+        function toggleMute() {
+            sfx.muted = !sfx.muted;
+            const btn = document.getElementById("sound-btn");
+            btn.innerHTML = sfx.muted ? '<i class="fa-solid fa-volume-xmark text-red-400"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+        }
+    </script>
+</body>
+</html>
